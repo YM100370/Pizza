@@ -131,9 +131,10 @@ st.markdown(
 )
 
 # Path to the unified file
-file_path = r'C:\Users\Yehuda\marketing streamlit\Pizza'
+# Removed the absolute path and made it relative to the script's location
 data_file_name = 'full_pizza_sales_data.csv'
-full_data_path = os.path.join(file_path, data_file_name)
+full_data_path = os.path.join(os.path.dirname(__file__), data_file_name)
+
 
 # --- Load Data (cached) ---
 @st.cache_data
@@ -154,7 +155,7 @@ try:
     df = load_data(full_data_path)
     st.success(f"נתונים נטענו בהצלחה מ- {data_file_name}")
 except FileNotFoundError:
-    st.error(f"שגיאה: הקובץ {data_file_name} לא נמצא בנתיב {file_path}. אנא ודא שהרצת את הסקריפט לאיחוד הנתונים.")
+    st.error(f"שגיאה: הקובץ {data_file_name} לא נמצא בנתיב {full_data_path}. אנא ודא שהרצת את הסקריפט לאיחוד הנתונים ושהקובץ נמצא באותה תיקייה כמו הקוד ב-GitHub.")
     st.stop() # Stop app execution if file not found
 
 # --- Sidebar Filters ---
@@ -308,20 +309,14 @@ pizzas_per_order_distribution['שכיחות'] = (pizzas_per_order_distribution['
 total_row_dist = pd.DataFrame({
     'כמות פיצות': ['סה"כ'],
     'כמות הזמנות': [pizzas_per_order_distribution['כמות הזמנות'].sum()],
-    'שכיחות': ['100.00%']
+    'שכיחות': ['100.00'] # Store as string for easy concat, will add '%' later
 })
 
 # Concatenate the distribution with the total row
 pizzas_per_order_distribution_final = pd.concat([pizzas_per_order_distribution, total_row_dist], ignore_index=True)
 
-# Format 'שכיחות' column for display (add '%' sign to all, including total)
+# Format 'שכיחות' column to add '%'
 pizzas_per_order_distribution_final['שכיחות'] = pizzas_per_order_distribution_final['שכיחות'].astype(str) + '%'
-# For the total row, the percentage is already '100.00%' and has a '%'.
-# For other rows, it was numeric and now converted to string with '%'.
-# We need to ensure numeric percentages are formatted with 2 decimal places before adding '%'.
-# Let's re-do the formatting for string values.
-pizzas_per_order_distribution_final.loc[pizzas_per_order_distribution_final['כמות פיצות'] != 'סה"כ', 'שכיחות'] = \
-    pizzas_per_order_distribution_final.loc[pizzas_per_order_distribution_final['כמות פיצות'] != 'סה"כ', 'שכיחות'].apply(lambda x: f"{float(x[:-1]):.2f}%")
 
 
 st.dataframe(pizzas_per_order_distribution_final, hide_index=True, use_container_width=True)
@@ -676,34 +671,4 @@ fig_revenue_hour = px.bar(
     template="plotly_white",
     text='item_total_price'
 )
-fig_revenue_hour.update_layout(title_x=0.95, title_xanchor='right')
-fig_revenue_hour.update_traces(texttemplate='$%{text:,.2s}', textposition='outside')
-st.plotly_chart(fig_revenue_hour, use_container_width=True)
-
-# Bar Chart - Revenue by Day of Week
-st.write("---")
-day_names = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"]
-filtered_df['day_of_week_num'] = filtered_df['order_datetime'].dt.dayofweek
-# Adjusting to match Hebrew day names order (Sunday is 0 in Plotly if category_orders is set correctly)
-# Python's Monday=0, Sunday=6
-# Hebrew: Sunday=0, Monday=1, ..., Saturday=6
-day_map_streamlit = {6: 0, 0: 1, 1: 2, 2: 3, 3: 4, 4: 5, 5: 6} # Map Python's dayofweek to Hebrew order
-filtered_df['day_of_week_hebrew_index'] = filtered_df['day_of_week_num'].map(day_map_streamlit)
-
-
-revenue_by_day = filtered_df.groupby('day_of_week_hebrew_index')['item_total_price'].sum().reset_index()
-revenue_by_day['day_of_week_name'] = revenue_by_day['day_of_week_hebrew_index'].map(lambda x: day_names[x])
-
-fig_revenue_day = px.bar(
-    revenue_by_day,
-    x='day_of_week_name',
-    y='item_total_price',
-    title='הכנסות לפי יום בשבוע',
-    labels={'day_of_week_name': 'יום בשבוע', 'item_total_price': 'הכנסה ($)'},
-    category_orders={'day_of_week_name': day_names},
-    template="plotly_white",
-    text='item_total_price'
-)
-fig_revenue_day.update_layout(title_x=0.95, title_xanchor='right')
-fig_revenue_day.update_traces(texttemplate='$%{text:,.2s}', textposition='outside')
-st.plotly_chart(fig_revenue_day, use_container_width=True)
+fig_revenue_hour.update_layout(title_x
