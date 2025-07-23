@@ -671,4 +671,35 @@ fig_revenue_hour = px.bar(
     template="plotly_white",
     text='item_total_price'
 )
-fig_revenue_hour.update_layout(title_x
+# Make sure this line is exactly as written, with a closing parenthesis.
+fig_revenue_hour.update_layout(title_x=0.95, title_xanchor='right')
+fig_revenue_hour.update_traces(texttemplate='$%{text:,.2s}', textposition='outside')
+st.plotly_chart(fig_revenue_hour, use_container_width=True)
+
+# Bar Chart - Revenue by Day of Week
+st.write("---")
+day_names = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"]
+filtered_df['day_of_week_num'] = filtered_df['order_datetime'].dt.dayofweek
+# Adjusting to match Hebrew day names order (Sunday is 0 in Plotly if category_orders is set correctly)
+# Python's Monday=0, Sunday=6
+# Hebrew: Sunday=0, Monday=1, ..., Saturday=6
+day_map_streamlit = {6: 0, 0: 1, 1: 2, 2: 3, 3: 4, 4: 5, 5: 6} # Map Python's dayofweek to Hebrew order
+filtered_df['day_of_week_hebrew_index'] = filtered_df['day_of_week_num'].map(day_map_streamlit)
+
+
+revenue_by_day = filtered_df.groupby('day_of_week_hebrew_index')['item_total_price'].sum().reset_index()
+revenue_by_day['day_of_week_name'] = revenue_by_day['day_of_week_hebrew_index'].map(lambda x: day_names[x])
+
+fig_revenue_day = px.bar(
+    revenue_by_day,
+    x='day_of_week_name',
+    y='item_total_price',
+    title='הכנסות לפי יום בשבוע',
+    labels={'day_of_week_name': 'יום בשבוע', 'item_total_price': 'הכנסה ($)'},
+    category_orders={'day_of_week_name': day_names},
+    template="plotly_white",
+    text='item_total_price'
+)
+fig_revenue_day.update_layout(title_x=0.95, title_xanchor='right')
+fig_revenue_day.update_traces(texttemplate='$%{text:,.2s}', textposition='outside')
+st.plotly_chart(fig_revenue_day, use_container_width=True)
